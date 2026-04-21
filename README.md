@@ -1,11 +1,7 @@
 # FullyShutdown
 一键关机重启
 
+使用WinForms重构项目
 
 
-打包命令
-
-```shell
-pyinstaller --onefile --icon=icon.ico FullyShutdown.py
-```
 
