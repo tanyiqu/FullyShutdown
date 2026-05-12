@@ -1,16 +1,9 @@
-﻿namespace FullyShutdown
+namespace FullyShutdown
 {
     partial class Form1
     {
-        /// <summary>
-        /// 必需的设计器变量。
-        /// </summary>
         private System.ComponentModel.IContainer components = null;
 
-        /// <summary>
-        /// 清理所有正在使用的资源。
-        /// </summary>
-        /// <param name="disposing">如果应释放托管资源，为 true；否则为 false。</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -22,16 +15,17 @@
 
         #region Windows 窗体设计器生成的代码
 
-        /// <summary>
-        /// 设计器支持所需的方法 - 不要修改
-        /// 使用代码编辑器修改此方法的内容。
-        /// </summary>
         private void InitializeComponent()
         {
             this.btnShutdown = new System.Windows.Forms.Button();
             this.btnRestart = new System.Windows.Forms.Button();
             this.btnCancel = new System.Windows.Forms.Button();
             this.cmbTimeout = new System.Windows.Forms.ComboBox();
+            this.dgvWhitelist = new System.Windows.Forms.DataGridView();
+            this.btnAdd = new System.Windows.Forms.Button();
+            this.btnRemove = new System.Windows.Forms.Button();
+            this.colName = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colDesc = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.SuspendLayout();
             // 
             // btnShutdown
@@ -86,11 +80,65 @@
             this.cmbTimeout.Text = "0秒 (立即)";
             this.cmbTimeout.SelectedIndexChanged += new System.EventHandler(this.cmbTimeout_SelectedIndexChanged);
             // 
+            // dgvWhitelist
+            // 
+            this.dgvWhitelist.AllowUserToAddRows = false;
+            this.dgvWhitelist.AllowUserToDeleteRows = false;
+            this.dgvWhitelist.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvWhitelist.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.colName,
+            this.colDesc});
+            this.dgvWhitelist.Location = new System.Drawing.Point(12, 115);
+            this.dgvWhitelist.MultiSelect = false;
+            this.dgvWhitelist.Name = "dgvWhitelist";
+            this.dgvWhitelist.ReadOnly = true;
+            this.dgvWhitelist.RowHeadersVisible = false;
+            this.dgvWhitelist.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+            this.dgvWhitelist.Size = new System.Drawing.Size(350, 172);
+            this.dgvWhitelist.TabIndex = 4;
+            // 
+            // colName
+            // 
+            this.colName.HeaderText = "程序名称";
+            this.colName.Name = "colName";
+            this.colName.ReadOnly = true;
+            this.colName.Width = 150;
+            // 
+            // colDesc
+            // 
+            this.colDesc.HeaderText = "描述";
+            this.colDesc.Name = "colDesc";
+            this.colDesc.ReadOnly = true;
+            this.colDesc.Width = 180;
+            // 
+            // btnAdd
+            // 
+            this.btnAdd.Location = new System.Drawing.Point(368, 115);
+            this.btnAdd.Name = "btnAdd";
+            this.btnAdd.Size = new System.Drawing.Size(100, 30);
+            this.btnAdd.TabIndex = 5;
+            this.btnAdd.Text = "添加程序";
+            this.btnAdd.UseVisualStyleBackColor = true;
+            this.btnAdd.Click += btnAdd_Click;
+            // 
+            // btnRemove
+            // 
+            this.btnRemove.Location = new System.Drawing.Point(368, 150);
+            this.btnRemove.Name = "btnRemove";
+            this.btnRemove.Size = new System.Drawing.Size(100, 30);
+            this.btnRemove.TabIndex = 6;
+            this.btnRemove.Text = "移除选中";
+            this.btnRemove.UseVisualStyleBackColor = true;
+            this.btnRemove.Click += btnRemove_Click;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(486, 110);
+            this.ClientSize = new System.Drawing.Size(484, 290);
+            this.Controls.Add(this.btnRemove);
+            this.Controls.Add(this.btnAdd);
+            this.Controls.Add(this.dgvWhitelist);
             this.Controls.Add(this.cmbTimeout);
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.btnRestart);
@@ -107,6 +155,10 @@
         private System.Windows.Forms.Button btnRestart;
         private System.Windows.Forms.Button btnCancel;
         private System.Windows.Forms.ComboBox cmbTimeout;
+        private System.Windows.Forms.DataGridView dgvWhitelist;
+        private System.Windows.Forms.Button btnAdd;
+        private System.Windows.Forms.Button btnRemove;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colName;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colDesc;
     }
 }
-

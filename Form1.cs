@@ -1,36 +1,37 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Diagnostics;
+using System.IO;
 
 namespace FullyShutdown
 {
     public partial class Form1 : Form
     {
         private int TIMEOUT = 0;
+        private List<WhitelistItem> whitelist = new List<WhitelistItem>();
+
+        public class WhitelistItem
+        {
+            public string Name { get; set; }
+            public string Desc { get; set; }
+        }
 
         public Form1()
         {
             InitializeComponent();
+            LoadWhitelist();
             try
             {
-                // 尝试从应用程序目录加载图标
-                string iconPath = System.IO.Path.Combine(System.Windows.Forms.Application.StartupPath, "icon.ico");
-                if (System.IO.File.Exists(iconPath))
+                string iconPath = Path.Combine(Application.StartupPath, "icon.ico");
+                if (File.Exists(iconPath))
                 {
                     this.Icon = new System.Drawing.Icon(iconPath);
                 }
                 else
                 {
-                    // 尝试从项目根目录加载图标（用于调试）
-                    iconPath = System.IO.Path.Combine(System.IO.Directory.GetParent(System.Windows.Forms.Application.StartupPath).Parent.FullName, "icon.ico");
-                    if (System.IO.File.Exists(iconPath))
+                    iconPath = Path.Combine(Directory.GetParent(Application.StartupPath).Parent.FullName, "icon.ico");
+                    if (File.Exists(iconPath))
                     {
                         this.Icon = new System.Drawing.Icon(iconPath);
                     }
@@ -39,13 +40,134 @@ namespace FullyShutdown
             catch { }
         }
 
+        private void LoadWhitelist()
+        {
+            whitelist.Clear();
+            dgvWhitelist.Rows.Clear();
+            try
+            {
+                string configPath = Path.Combine(Application.StartupPath, "whitelist.txt");
+                if (File.Exists(configPath))
+                {
+                    string[] lines = File.ReadAllLines(configPath);
+                    foreach (string line in lines)
+                    {
+                        if (!string.IsNullOrWhiteSpace(line))
+                        {
+                            WhitelistItem item = ParseWhitelistLine(line.Trim());
+                            if (item != null)
+                            {
+                                whitelist.Add(item);
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
+            foreach (WhitelistItem item in whitelist)
+            {
+                dgvWhitelist.Rows.Add(item.Name, item.Desc);
+            }
+        }
+
+        private WhitelistItem ParseWhitelistLine(string line)
+        {
+            try
+            {
+                string name = ExtractValue(line, "name");
+                string desc = ExtractValue(line, "desc");
+                if (!string.IsNullOrEmpty(name))
+                {
+                    return new WhitelistItem { Name = name, Desc = desc };
+                }
+            }
+            catch { }
+            return null;
+        }
+
+        private string ExtractValue(string line, string key)
+        {
+            string pattern = key + ":\"";
+            int startIdx = line.IndexOf(pattern);
+            if (startIdx >= 0)
+            {
+                startIdx += pattern.Length;
+                int endIdx = line.IndexOf("\"", startIdx);
+                if (endIdx > startIdx)
+                {
+                    return line.Substring(startIdx, endIdx - startIdx);
+                }
+            }
+            return string.Empty;
+        }
+
+        private void SaveWhitelist()
+        {
+            try
+            {
+                string configPath = Path.Combine(Application.StartupPath, "whitelist.txt");
+                List<string> lines = new List<string>();
+                foreach (WhitelistItem item in whitelist)
+                {
+                    lines.Add($"{{name:\"{item.Name}\", desc:\"{item.Desc}\"}}");
+                }
+                File.WriteAllLines(configPath, lines);
+            }
+            catch { }
+        }
+
+        private List<WhitelistItem> GetRunningWhitelistProcesses()
+        {
+            List<WhitelistItem> runningProcesses = new List<WhitelistItem>();
+            Process[] processes = Process.GetProcesses();
+            foreach (Process p in processes)
+            {
+                try
+                {
+                    string processName = p.ProcessName.ToLower();
+                    foreach (WhitelistItem item in whitelist)
+                    {
+                        string whitelistName = Path.GetFileNameWithoutExtension(item.Name).ToLower();
+                        if (processName == whitelistName || processName == whitelistName + ".exe")
+                        {
+                            if (!runningProcesses.Contains(item))
+                            {
+                                runningProcesses.Add(item);
+                            }
+                        }
+                    }
+                }
+                catch { }
+            }
+            return runningProcesses;
+        }
+
+        private bool CheckWhitelistProcesses()
+        {
+            List<WhitelistItem> running = GetRunningWhitelistProcesses();
+            if (running.Count > 0)
+            {
+                string message = "以下白名单程序正在运行，请先关闭它们：\n\n";
+                foreach (WhitelistItem item in running)
+                {
+                    message += $"• {item.Name} ({item.Desc})\n";
+                }
+                message += "\n关机/重启操作已取消。";
+                MessageBox.Show(message, "程序正在运行", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return true;
+            }
+            return false;
+        }
+
         private void btnShutdown_Click(object sender, EventArgs e)
         {
+            if (CheckWhitelistProcesses()) return;
             ExecuteCommand($"shutdown -f -s -t {TIMEOUT}");
         }
 
         private void btnRestart_Click(object sender, EventArgs e)
         {
+            if (CheckWhitelistProcesses()) return;
             ExecuteCommand($"shutdown -f -r -t {TIMEOUT}");
         }
 
@@ -63,6 +185,68 @@ namespace FullyShutdown
             }
         }
 
+        private void btnAdd_Click(object sender, EventArgs e)
+        {
+            using (OpenFileDialog openFileDialog = new OpenFileDialog())
+            {
+                openFileDialog.Filter = "可执行文件 (*.exe)|*.exe|所有文件 (*.*)|*.*";
+                openFileDialog.Title = "选择要添加到白名单的程序";
+                if (openFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    string fileName = Path.GetFileName(openFileDialog.FileName);
+                    if (!whitelist.Exists(item => item.Name == fileName))
+                    {
+                        using (InputDialog inputDialog = new InputDialog())
+                        {
+                            inputDialog.Title = "输入程序描述";
+                            inputDialog.LabelText = "请输入程序描述：";
+                            if (inputDialog.ShowDialog() == DialogResult.OK)
+                            {
+                                whitelist.Add(new WhitelistItem { Name = fileName, Desc = inputDialog.InputText });
+                                dgvWhitelist.Rows.Add(fileName, inputDialog.InputText);
+                                SaveWhitelist();
+                            }
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show("该程序已在白名单中。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                }
+            }
+        }
+
+        private void btnRemove_Click(object sender, EventArgs e)
+        {
+            int selectedIndex = dgvWhitelist.CurrentRow.Index;
+            if (selectedIndex >= 0 && selectedIndex < dgvWhitelist.Rows.Count)
+            {
+                string name = dgvWhitelist.Rows[selectedIndex].Cells["colName"].Value.ToString();
+                string desc = dgvWhitelist.Rows[selectedIndex].Cells["colDesc"].Value.ToString();
+                
+                DialogResult result = MessageBox.Show(
+                    $"确定要移除程序 \"{name}\" ({desc}) 吗？", 
+                    "确认移除", 
+                    MessageBoxButtons.YesNo, 
+                    MessageBoxIcon.Question);
+                
+                if (result == DialogResult.Yes)
+                {
+                    WhitelistItem item = whitelist.Find(i => i.Name == name);
+                    if (item != null)
+                    {
+                        whitelist.Remove(item);
+                        dgvWhitelist.Rows.RemoveAt(selectedIndex);
+                        SaveWhitelist();
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("请先选中要移除的项目。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
         private void ExecuteCommand(string command)
         {
             try
@@ -73,6 +257,69 @@ namespace FullyShutdown
             {
                 MessageBox.Show($"执行命令时出错: {ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+    }
+
+    public class InputDialog : Form
+    {
+        private Label label;
+        private TextBox textBox;
+        private Button okButton;
+        private Button cancelButton;
+
+        public string Title
+        {
+            get { return this.Text; }
+            set { this.Text = value; }
+        }
+
+        public string LabelText
+        {
+            get { return label.Text; }
+            set { label.Text = value; }
+        }
+
+        public string InputText
+        {
+            get { return textBox.Text; }
+            set { textBox.Text = value; }
+        }
+
+        public InputDialog()
+        {
+            this.Text = "输入";
+            this.Size = new System.Drawing.Size(300, 150);
+            this.FormBorderStyle = FormBorderStyle.FixedDialog;
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
+
+            label = new Label();
+            label.Location = new System.Drawing.Point(15, 20);
+            label.Size = new System.Drawing.Size(260, 20);
+            this.Controls.Add(label);
+
+            textBox = new TextBox();
+            textBox.Location = new System.Drawing.Point(15, 50);
+            textBox.Size = new System.Drawing.Size(260, 20);
+            this.Controls.Add(textBox);
+
+            okButton = new Button();
+            okButton.Location = new System.Drawing.Point(85, 90);
+            okButton.Size = new System.Drawing.Size(60, 25);
+            okButton.Text = "确定";
+            okButton.DialogResult = DialogResult.OK;
+            this.Controls.Add(okButton);
+
+            cancelButton = new Button();
+            cancelButton.Location = new System.Drawing.Point(150, 90);
+            cancelButton.Size = new System.Drawing.Size(60, 25);
+            cancelButton.Text = "取消";
+            cancelButton.DialogResult = DialogResult.Cancel;
+            this.Controls.Add(cancelButton);
+
+            this.AcceptButton = okButton;
+            this.CancelButton = cancelButton;
         }
     }
 }
