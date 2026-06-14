@@ -17,6 +17,7 @@ namespace FullyShutdown
 
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.btnShutdown = new System.Windows.Forms.Button();
             this.btnRestart = new System.Windows.Forms.Button();
             this.btnCancel = new System.Windows.Forms.Button();
@@ -26,6 +27,8 @@ namespace FullyShutdown
             this.btnRemove = new System.Windows.Forms.Button();
             this.colName = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colDesc = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colKill = new System.Windows.Forms.DataGridViewButtonColumn();
+            this.timerStatus = new System.Windows.Forms.Timer(this.components);
             this.SuspendLayout();
             // 
             // btnShutdown
@@ -87,14 +90,15 @@ namespace FullyShutdown
             this.dgvWhitelist.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dgvWhitelist.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.colName,
-            this.colDesc});
+            this.colDesc,
+            this.colKill});
             this.dgvWhitelist.Location = new System.Drawing.Point(12, 115);
             this.dgvWhitelist.MultiSelect = false;
             this.dgvWhitelist.Name = "dgvWhitelist";
             this.dgvWhitelist.ReadOnly = true;
             this.dgvWhitelist.RowHeadersVisible = false;
             this.dgvWhitelist.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvWhitelist.Size = new System.Drawing.Size(350, 172);
+            this.dgvWhitelist.Size = new System.Drawing.Size(450, 172);
             this.dgvWhitelist.TabIndex = 4;
             // 
             // colName
@@ -111,9 +115,18 @@ namespace FullyShutdown
             this.colDesc.ReadOnly = true;
             this.colDesc.Width = 180;
             // 
+            // colKill
+            // 
+            this.colKill.HeaderText = "运行状态/操作";
+            this.colKill.Name = "colKill";
+            this.colKill.ReadOnly = true;
+            this.colKill.Text = "未运行";
+            this.colKill.UseColumnTextForButtonValue = false;
+            this.colKill.Width = 100;
+            // 
             // btnAdd
             // 
-            this.btnAdd.Location = new System.Drawing.Point(368, 115);
+            this.btnAdd.Location = new System.Drawing.Point(468, 115);
             this.btnAdd.Name = "btnAdd";
             this.btnAdd.Size = new System.Drawing.Size(100, 30);
             this.btnAdd.TabIndex = 5;
@@ -123,7 +136,7 @@ namespace FullyShutdown
             // 
             // btnRemove
             // 
-            this.btnRemove.Location = new System.Drawing.Point(368, 150);
+            this.btnRemove.Location = new System.Drawing.Point(468, 150);
             this.btnRemove.Name = "btnRemove";
             this.btnRemove.Size = new System.Drawing.Size(100, 30);
             this.btnRemove.TabIndex = 6;
@@ -131,11 +144,17 @@ namespace FullyShutdown
             this.btnRemove.UseVisualStyleBackColor = true;
             this.btnRemove.Click += btnRemove_Click;
             // 
+            // timerStatus
+            // 
+            this.timerStatus.Enabled = true;
+            this.timerStatus.Interval = 5000;
+            this.timerStatus.Tick += new System.EventHandler(this.timerStatus_Tick);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(484, 290);
+            this.ClientSize = new System.Drawing.Size(584, 290);
             this.Controls.Add(this.btnRemove);
             this.Controls.Add(this.btnAdd);
             this.Controls.Add(this.dgvWhitelist);
@@ -145,6 +164,7 @@ namespace FullyShutdown
             this.Controls.Add(this.btnShutdown);
             this.Name = "Form1";
             this.Text = "完全关机";
+            this.Load += new System.EventHandler(this.Form1_Load);
             this.ResumeLayout(false);
 
         }
@@ -160,5 +180,7 @@ namespace FullyShutdown
         private System.Windows.Forms.Button btnRemove;
         private System.Windows.Forms.DataGridViewTextBoxColumn colName;
         private System.Windows.Forms.DataGridViewTextBoxColumn colDesc;
+        private System.Windows.Forms.DataGridViewButtonColumn colKill;
+        private System.Windows.Forms.Timer timerStatus;
     }
 }

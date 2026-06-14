@@ -20,6 +20,7 @@ namespace FullyShutdown
         public Form1()
         {
             InitializeComponent();
+            dgvWhitelist.CellContentClick += dgvWhitelist_CellContentClick;
             LoadWhitelist();
             try
             {
@@ -66,8 +67,13 @@ namespace FullyShutdown
             catch { }
             foreach (WhitelistItem item in whitelist)
             {
-                dgvWhitelist.Rows.Add(item.Name, item.Desc);
+                dgvWhitelist.Rows.Add(item.Name, item.Desc, null);
             }
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            RefreshProcessStatus();
         }
 
         private WhitelistItem ParseWhitelistLine(string line)
@@ -203,7 +209,7 @@ namespace FullyShutdown
                             if (inputDialog.ShowDialog() == DialogResult.OK)
                             {
                                 whitelist.Add(new WhitelistItem { Name = fileName, Desc = inputDialog.InputText });
-                                dgvWhitelist.Rows.Add(fileName, inputDialog.InputText);
+                                dgvWhitelist.Rows.Add(fileName, inputDialog.InputText, null);
                                 SaveWhitelist();
                             }
                         }
@@ -257,6 +263,92 @@ namespace FullyShutdown
             {
                 MessageBox.Show($"执行命令时出错: {ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private void timerStatus_Tick(object sender, EventArgs e)
+        {
+            RefreshProcessStatus();
+        }
+
+        private void RefreshProcessStatus()
+        {
+            try
+            {
+                foreach (DataGridViewRow row in dgvWhitelist.Rows)
+                {
+                    if (row.Cells["colName"].Value != null)
+                    {
+                        string name = row.Cells["colName"].Value.ToString();
+                        bool isRunning = IsProcessRunning(name);
+                        row.Cells["colKill"].Value = isRunning ? "强制关闭" : "未运行";
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private bool IsProcessRunning(string fileName)
+        {
+            try
+            {
+                string targetName = Path.GetFileNameWithoutExtension(fileName).ToLower();
+                Process[] processes = Process.GetProcesses();
+                foreach (Process p in processes)
+                {
+                    try
+                    {
+                        string processName = p.ProcessName.ToLower();
+                        if (processName == targetName || processName == targetName + ".exe")
+                        {
+                            return true;
+                        }
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+            return false;
+        }
+
+        private void dgvWhitelist_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.RowIndex >= dgvWhitelist.Rows.Count) return;
+            if (e.ColumnIndex == dgvWhitelist.Columns["colKill"].Index)
+            {
+                DataGridViewRow row = dgvWhitelist.Rows[e.RowIndex];
+                if (row.Cells["colName"].Value != null)
+                {
+                    string cellValue = row.Cells["colKill"].Value?.ToString();
+                    if (cellValue == "强制关闭")
+                    {
+                        string fileName = row.Cells["colName"].Value.ToString();
+                        KillProcessByName(fileName);
+                    }
+                }
+            }
+        }
+
+        private void KillProcessByName(string fileName)
+        {
+            try
+            {
+                string targetName = Path.GetFileNameWithoutExtension(fileName).ToLower();
+                Process[] processes = Process.GetProcesses();
+                foreach (Process p in processes)
+                {
+                    try
+                    {
+                        string processName = p.ProcessName.ToLower();
+                        if (processName == targetName || processName == targetName + ".exe")
+                        {
+                            p.Kill();
+                        }
+                    }
+                    catch { }
+                }
+                RefreshProcessStatus();
+            }
+            catch { }
         }
     }
 
