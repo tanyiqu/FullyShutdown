@@ -20,6 +20,7 @@ namespace FullyShutdown
         public Form1()
         {
             InitializeComponent();
+            SetupGridStyle();
             dgvWhitelist.CellContentClick += dgvWhitelist_CellContentClick;
             LoadWhitelist();
             try
@@ -39,6 +40,68 @@ namespace FullyShutdown
                 }
             }
             catch { }
+        }
+
+        private void SetupGridStyle()
+        {
+            dgvWhitelist.RowsDefaultCellStyle.BackColor = System.Drawing.Color.White;
+            dgvWhitelist.AlternatingRowsDefaultCellStyle.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(249)))), ((int)(((byte)(250)))), ((int)(((byte)(251)))));
+            dgvWhitelist.CellPainting += dgvWhitelist_CellPainting;
+        }
+
+        private void dgvWhitelist_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex != dgvWhitelist.Columns["colKill"].Index) return;
+
+            string value = e.FormattedValue != null ? e.FormattedValue.ToString() : "";
+            bool isRunning = value == "强制关闭";
+
+            e.PaintBackground(e.CellBounds, true);
+            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+            using (System.Drawing.StringFormat sf = new System.Drawing.StringFormat())
+            {
+                sf.Alignment = System.Drawing.StringAlignment.Center;
+                sf.LineAlignment = System.Drawing.StringAlignment.Center;
+                sf.FormatFlags = System.Drawing.StringFormatFlags.NoWrap;
+
+                if (isRunning)
+                {
+                    System.Drawing.Rectangle btnRect = new System.Drawing.Rectangle(
+                        e.CellBounds.X + 10, e.CellBounds.Y + 6, e.CellBounds.Width - 20, e.CellBounds.Height - 12);
+                    using (System.Drawing.SolidBrush btnBrush = new System.Drawing.SolidBrush(
+                        System.Drawing.Color.FromArgb(198, 40, 40)))
+                    using (System.Drawing.SolidBrush txtBrush = new System.Drawing.SolidBrush(System.Drawing.Color.White))
+                    using (System.Drawing.Font btnFont = new System.Drawing.Font("微软雅黑", 8.5F, System.Drawing.FontStyle.Bold))
+                    {
+                        System.Drawing.Drawing2D.GraphicsPath path = GetRoundedRect(btnRect, 6);
+                        e.Graphics.FillPath(btnBrush, path);
+                        e.Graphics.DrawString(value, btnFont, txtBrush, btnRect, sf);
+                    }
+                }
+                else
+                {
+                    using (System.Drawing.SolidBrush txtBrush = new System.Drawing.SolidBrush(
+                        System.Drawing.Color.FromArgb(107, 114, 128)))
+                    using (System.Drawing.Font txtFont = new System.Drawing.Font("微软雅黑", 8.5F))
+                    {
+                        e.Graphics.DrawString("— 未运行 —", txtFont, txtBrush, e.CellBounds, sf);
+                    }
+                }
+            }
+            e.Handled = true;
+        }
+
+        private System.Drawing.Drawing2D.GraphicsPath GetRoundedRect(System.Drawing.RectangleF rect, float radius)
+        {
+            System.Drawing.Drawing2D.GraphicsPath path = new System.Drawing.Drawing2D.GraphicsPath();
+            float d = radius * 2;
+            path.AddArc(rect.X, rect.Y, d, d, 180, 90);
+            path.AddArc(rect.Right - d, rect.Y, d, d, 270, 90);
+            path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90);
+            path.AddArc(rect.X, rect.Bottom - d, d, d, 90, 90);
+            path.CloseFigure();
+            return path;
         }
 
         private void LoadWhitelist()
@@ -224,6 +287,11 @@ namespace FullyShutdown
 
         private void btnRemove_Click(object sender, EventArgs e)
         {
+            if (dgvWhitelist.CurrentRow == null || dgvWhitelist.CurrentRow.IsNewRow)
+            {
+                MessageBox.Show("请先选中要移除的项目。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
             int selectedIndex = dgvWhitelist.CurrentRow.Index;
             if (selectedIndex >= 0 && selectedIndex < dgvWhitelist.Rows.Count)
             {
@@ -246,10 +314,6 @@ namespace FullyShutdown
                         SaveWhitelist();
                     }
                 }
-            }
-            else
-            {
-                MessageBox.Show("请先选中要移除的项目。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
